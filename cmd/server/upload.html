@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Files</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: #f7f7f7;
+    }
+    .drop-zone {
+        width: 300px;
+        height: 200px;
+        border: 2px dashed #ccc;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        background: #f0f0f0;
+    }
+    .drop-zone:hover {
+        cursor: pointer;
+    }
+    </style>
+</head>
+<body>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="myFiles">Upload Files:</label>
+            <input type="file" id="myFiles" name="myFiles" multiple required>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    <script>
+        $('#myFiles').on('change', function(e) {
+            var files = e.target.files;
+            if(files.length > 0) {
+                var confirmUpload = confirm("Do you want to upload these files?");
+                if (!confirmUpload) {
+                    e.preventDefault();
+                    alert("Upload cancelled");
+                    // Ideally, here we should return a 401 HTTP status code from the server. This requires backend handling.
+                }
+            }
+        });
+    </script>
+</body>
+</html>
