@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"runtime"
 
 	"github.com/sqweek/dialog"
 )
@@ -19,7 +20,18 @@ func getFileNames(files []*multipart.FileHeader) []string {
 	return filenames
 }
 
+type DialogData struct {
+	message    string
+	resultChan chan bool
+}
+
 func main() {
+	var dialogChan = make(chan DialogData)
+
+	go func() {
+
+	}()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "upload.html")
 	})
@@ -33,10 +45,13 @@ func main() {
 			names := getFileNames(files)
 			log.Printf("%s want to upload %s", r.RemoteAddr, names)
 
-			// Display a dialog asking for confirmation before saving files
-			confirm := dialog.Message("%s wants to upload files %s. Do you want to accept?", r.RemoteAddr, names).
-				Title("Upload Confirmation").
-				YesNo()
+			resultChan := make(chan bool)
+			dialogChan <- DialogData{
+				message:    fmt.Sprintf("%s wants to upload files %s. Do you want to accept?", r.RemoteAddr, names),
+				resultChan: resultChan,
+			}
+
+			confirm := <-resultChan
 
 			if !confirm {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -71,6 +86,17 @@ func main() {
 		}
 	})
 
-	log.Printf("Serving on :8765")
-	http.ListenAndServe(":8765", nil)
+	go func() {
+		log.Printf("Serving on :8765")
+		http.ListenAndServe(":8765", nil)
+	}()
+
+	for data := range dialogChan {
+		runtime.LockOSThread()
+		log.Printf("UI thread received message: %s", data.message)
+		confirm := dialog.Message(data.message).Title("Upload Confirmation").YesNo()
+		runtime.UnlockOSThread()
+		data.resultChan <- confirm
+
+	}
 }
